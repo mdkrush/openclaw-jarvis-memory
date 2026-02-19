@@ -4,15 +4,11 @@
 
 set -e
 
-echo "═══════════════════════════════════════════════════════════════"
-echo "  OpenClaw Jarvis-Like Memory System - Installer"
-echo "═══════════════════════════════════════════════════════════════"
-echo ""
-
 # Colors for output
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
@@ -23,16 +19,35 @@ REDIS_PORT="${REDIS_PORT:-6379}"
 QDRANT_URL="${QDRANT_URL:-http://10.0.0.40:6333}"
 OLLAMA_URL="${OLLAMA_URL:-http://10.0.0.10:11434}"
 
-echo "Configuration:"
-echo "  Workspace: $WORKSPACE_DIR"
-echo "  User ID: $USER_ID"
-echo "  Redis: $REDIS_HOST:$REDIS_PORT"
-echo "  Qdrant: $QDRANT_URL"
-echo "  Ollama: $OLLAMA_URL"
+# Backup directory
+BACKUP_DIR="$WORKSPACE_DIR/.backups"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+BACKUP_PREFIX="$BACKUP_DIR/install_${TIMESTAMP}"
+
+echo "═══════════════════════════════════════════════════════════════"
+echo "  OpenClaw Jarvis-Like Memory System - Installer"
+echo "═══════════════════════════════════════════════════════════════"
+echo ""
+echo -e "${BLUE}Backup Location: $BACKUP_DIR${NC}"
 echo ""
 
+# Create backup directory
+mkdir -p "$BACKUP_DIR"
+
+# Function to backup a file before modifying
+backup_file() {
+    local file="$1"
+    local backup_name="$2"
+    if [ -f "$file" ]; then
+        cp "$file" "$backup_name"
+        echo -e "${GREEN}  ✓ Backed up: $(basename $file) → $(basename $backup_name)${NC}"
+        return 0
+    fi
+    return 1
+}
+
 # Step 1: Check Python version
-echo -e "${YELLOW}[1/8] Checking Python...${NC}"
+echo -e "${YELLOW}[1/9] Checking Python...${NC}"
 if command -v python3 &>/dev/null; then
     PYTHON_VERSION=$(python3 --version 2>&1 | awk '{print $2}')
     echo "  ✓ Python $PYTHON_VERSION found"
@@ -42,18 +57,18 @@ else
 fi
 
 # Step 2: Create directory structure
-echo -e "${YELLOW}[2/8] Creating directory structure...${NC}"
+echo -e "${YELLOW}[2/9] Creating directory structure...${NC}"
 mkdir -p "$WORKSPACE_DIR"/{skills/{mem-redis,qdrant-memory,task-queue}/scripts,memory,MEMORY_DEF}
 touch "$WORKSPACE_DIR/memory/.gitkeep"
 echo "  ✓ Directories created"
 
 # Step 3: Install Python dependencies
-echo -e "${YELLOW}[3/8] Installing Python dependencies...${NC}"
+echo -e "${YELLOW}[3/9] Installing Python dependencies...${NC}"
 pip3 install --user redis qdrant-client requests urllib3 2>/dev/null || pip3 install redis qdrant-client requests urllib3
 echo "  ✓ Dependencies installed"
 
 # Step 4: Test infrastructure connectivity
-echo -e "${YELLOW}[4/8] Testing infrastructure...${NC}"
+echo -e "${YELLOW}[4/9] Testing infrastructure...${NC}"
 
 # Test Redis
 if python3 -c "import redis; r=redis.Redis(host='$REDIS_HOST', port=$REDIS_PORT); r.ping()" 2>/dev/null; then
@@ -79,8 +94,39 @@ else
     echo "    Make sure Ollama is running with snowflake-arctic-embed2 model"
 fi
 
-# Step 5: Create environment configuration
-echo -e "${YELLOW}[5/8] Creating environment configuration...${NC}"
+# Step 5: Backup existing files before modifying
+echo ""
+echo -e "${YELLOW}[5/9] Creating backups of existing files...${NC}"
+BACKUP_COUNT=0
+
+# Backup existing crontab
+if crontab -l 2>/dev/null >/dev/null; then
+    crontab -l > "${BACKUP_PREFIX}_crontab.bak.rush" 2>/dev/null
+    echo -e "${GREEN}  ✓ Backed up crontab → .backups/install_${TIMESTAMP}_crontab.bak.rush${NC}"
+    ((BACKUP_COUNT++))
+else
+    echo "  ℹ️  No existing crontab to backup"
+fi
+
+# Backup existing HEARTBEAT.md
+if backup_file "$WORKSPACE_DIR/HEARTBEAT.md" "${BACKUP_PREFIX}_HEARTBEAT.md.bak.rush"; then
+    ((BACKUP_COUNT++))
+fi
+
+# Backup existing .memory_env
+if backup_file "$WORKSPACE_DIR/.memory_env" "${BACKUP_PREFIX}_memory_env.bak.rush"; then
+    ((BACKUP_COUNT++))
+fi
+
+if [ $BACKUP_COUNT -eq 0 ]; then
+    echo "  ℹ️  No existing files to backup (fresh install)"
+else
+    echo -e "${GREEN}  ✓ $BACKUP_COUNT file(s) backed up to $BACKUP_DIR${NC}"
+fi
+
+# Step 6: Create environment configuration
+echo ""
+echo -e "${YELLOW}[6/9] Creating environment configuration...${NC}"
 cat > "$WORKSPACE_DIR/.memory_env" <<EOF
 # Memory System Environment Variables
 export WORKSPACE_DIR="$WORKSPACE_DIR"
@@ -93,8 +139,8 @@ export MEMORY_INITIALIZED="true"
 EOF
 echo "  ✓ Created $WORKSPACE_DIR/.memory_env"
 
-# Step 6: Initialize Qdrant collections
-echo -e "${YELLOW}[6/8] Initializing Qdrant collections...${NC}"
+# Step 7: Initialize Qdrant collections
+echo -e "${YELLOW}[7/9] Initializing Qdrant collections...${NC}"
 python3 <<EOF
 import sys
 sys.path.insert(0, "$WORKSPACE_DIR/skills/qdrant-memory/scripts")
@@ -103,8 +149,8 @@ init_collection()
 print("  ✓ kimi_memories collection ready")
 EOF
 
-# Step 7: Set up cron jobs
-echo -e "${YELLOW}[7/8] Setting up cron jobs...${NC}"
+# Step 8: Set up cron jobs
+echo -e "${YELLOW}[8/9] Setting up cron jobs...${NC}"
 CRON_FILE=$(mktemp)
 crontab -l 2>/dev/null > "$CRON_FILE" || true
 
@@ -125,8 +171,8 @@ crontab "$CRON_FILE"
 rm "$CRON_FILE"
 echo "  ✓ Cron jobs configured"
 
-# Step 8: Create HEARTBEAT.md template
-echo -e "${YELLOW}[8/8] Creating HEARTBEAT.md...${NC}"
+# Step 9: Create HEARTBEAT.md template
+echo -e "${YELLOW}[9/9] Creating HEARTBEAT.md...${NC}"
 cat > "$WORKSPACE_DIR/HEARTBEAT.md" <<'EOF'
 # HEARTBEAT.md - Memory System Automation
 
@@ -154,15 +200,66 @@ python3 /root/.openclaw/workspace/skills/mem-redis/scripts/save_mem.py --user-id
 EOF
 echo "  ✓ HEARTBEAT.md created"
 
+# Create backup manifest
+echo ""
+echo -e "${YELLOW}Creating backup manifest...${NC}"
+MANIFEST_FILE="${BACKUP_PREFIX}_MANIFEST.txt"
+cat > "$MANIFEST_FILE" <<EOF
+OpenClaw Jarvis Memory - Installation Backup Manifest
+======================================================
+Date: $(date)
+Timestamp: $TIMESTAMP
+Backup Directory: $BACKUP_DIR
+
+Files Backed Up:
+EOF
+
+# List backed up files
+for file in "$BACKUP_DIR"/install_${TIMESTAMP}_*.bak.rush; do
+    if [ -f "$file" ]; then
+        basename "$file" >> "$MANIFEST_FILE"
+    fi
+done
+
+cat >> "$MANIFEST_FILE" <<EOF
+
+To Restore Files Manually:
+==========================
+
+1. Restore crontab:
+   crontab "$BACKUP_DIR/install_${TIMESTAMP}_crontab.bak.rush"
+
+2. Restore HEARTBEAT.md:
+   cp "$BACKUP_DIR/install_${TIMESTAMP}_HEARTBEAT.md.bak.rush" "$WORKSPACE_DIR/HEARTBEAT.md"
+
+3. Restore .memory_env:
+   cp "$BACKUP_DIR/install_${TIMESTAMP}_memory_env.bak.rush" "$WORKSPACE_DIR/.memory_env"
+
+All backups are stored in: $BACKUP_DIR
+EOF
+
+echo -e "${GREEN}  ✓ Backup manifest created: ${BACKUP_PREFIX}_MANIFEST.txt${NC}"
+
 echo ""
 echo "═══════════════════════════════════════════════════════════════"
 echo -e "${GREEN}  Installation Complete!${NC}"
 echo "═══════════════════════════════════════════════════════════════"
 echo ""
+if [ $BACKUP_COUNT -gt 0 ]; then
+    echo -e "${BLUE}Backups created:${NC} $BACKUP_COUNT file(s) in $BACKUP_DIR"
+    echo "  Timestamp: install_${TIMESTAMP}_*.bak.rush"
+    echo ""
+fi
 echo "Next steps:"
 echo "  1. Source the environment: source $WORKSPACE_DIR/.memory_env"
 echo "  2. Test the system: python3 $WORKSPACE_DIR/skills/mem-redis/scripts/save_mem.py --user-id $USER_ID"
 echo "  3. Add to your HEARTBEAT.md to enable automatic saving"
+echo ""
+echo "To undo installation:"
+echo "  ./uninstall.sh"
+echo ""
+echo "To restore from backup:"
+echo "  See $BACKUP_DIR/install_${TIMESTAMP}_MANIFEST.txt"
 echo ""
 echo "Documentation:"
 echo "  - $WORKSPACE_DIR/docs/MEM_DIAGRAM.md"

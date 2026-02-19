@@ -17,15 +17,18 @@ This blueprint contains everything needed to build a production-grade, multi-lay
 | **mem-redis** | Redis buffer (Layer 1) | ✅ Complete |
 | **qdrant-memory** | Vector DB (Layer 3) | ✅ Complete |
 | **task-queue** | Background jobs | ✅ Complete |
-| **install.sh** | One-command installer | ✅ Complete |
+| **install.sh** | One-command installer (with auto-backup) | ✅ Complete |
+| **uninstall.sh** | Recovery/uninstall script | ✅ Complete |
+| **RESTORE.md** | Manual backup/restore guide | ✅ Complete |
 | **docker-compose.yml** | Infrastructure | ✅ Complete |
 
 ### Files Overview
 
 ```
 blueprint/
-├── install.sh                  ⭐ Main installer
-├── uninstall.sh                🧹 Recovery script
+├── install.sh                  ⭐ Main installer (auto-backs up existing files)
+├── uninstall.sh                🧹 Recovery/uninstall script
+├── RESTORE.md                  🛡️ Manual backup/restore guide
 ├── README.md                   ⭐ Start here
 ├── TUTORIAL.md                 🎬 YouTube script
 ├── docker-compose.yml          🐳 Infrastructure
@@ -141,11 +144,13 @@ Before sharing this blueprint, verify:
 - [ ] All scripts are executable (`chmod +x`)
 - [ ] Docker Compose starts all services
 - [ ] Install script runs without errors
+- [ ] Installer creates `.bak.rush` backups before modifying files
 - [ ] `save mem` works
 - [ ] `save q` works
 - [ ] `q <topic>` search works
 - [ ] Cron jobs are configured
 - [ ] HEARTBEAT.md template is correct
+- [ ] RESTORE.md explains manual restore process
 
 ---
 
@@ -154,8 +159,9 @@ Before sharing this blueprint, verify:
 | File | Description |
 |------|-------------|
 | MEM_DIAGRAM.md | Complete architecture documentation |
-| install.sh | Automated installer |
+| install.sh | Automated installer (auto-backs up before changes) |
 | uninstall.sh | Recovery/uninstall script |
+| RESTORE.md | Manual backup/restore documentation |
 | TUTORIAL.md | YouTube video script |
 | docker-compose.yml | Infrastructure as code |
 

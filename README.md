@@ -36,7 +36,7 @@ A three-layer memory architecture:
 # 1. Clone/copy this blueprint to your workspace
 cp -r blueprint/* ~/.openclaw/workspace/
 
-# 2. Run the installer
+# 2. Run the installer (automatically backs up existing files)
 cd ~/.openclaw/workspace
 chmod +x install.sh
 ./install.sh
@@ -47,6 +47,10 @@ source .memory_env
 # 4. Test it
 python3 skills/mem-redis/scripts/save_mem.py --user-id yourname
 ```
+
+**🔒 The installer automatically backs up** your existing `HEARTBEAT.md`, `.memory_env`, and crontab before making changes. Backups are stored in `.backups/` with timestamps.
+
+**See [RESTORE.md](RESTORE.md)** for how to restore from backups manually.
 
 ### 🧹 Uninstall/Recovery
 
