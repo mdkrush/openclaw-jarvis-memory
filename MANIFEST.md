@@ -1,6 +1,6 @@
 # OpenClaw Jarvis-Like Memory System - Complete Blueprint
 
-> **Version:** 1.2.0  
+> **Version:** 1.3.0  
 > **Date:** February 19, 2026  
 > **Purpose:** Build an AI assistant that actually remembers
 
@@ -31,7 +31,7 @@ blueprint/
 ├── uninstall.sh                🧹 Recovery/uninstall script
 ├── RESTORE.md                  🛡️ Manual backup/restore guide
 ├── CHANGELOG.md                📋 Version history
-├── README.md                   ⭐ Start here
+├── README.md                   ⭐ Start here (includes command reference & known issues)
 ├── TUTORIAL.md                 🎬 YouTube script
 ├── docker-compose.yml          🐳 Infrastructure
 ├── requirements.txt            📦 Python deps
@@ -142,6 +142,7 @@ Layer 3: Qdrant (semantic, searchable)
 
 | **Version** | **Date** | **Changes** |
 |-------------|----------|-------------|
+| 1.3.0 | Feb 19, 2026 | Command reference, known issues documentation |
 | 1.2.0 | Feb 19, 2026 | Auto-backup, RESTORE.md, version tracking |
 | 1.1.0 | Feb 19, 2026 | Added uninstall.sh recovery script |
 | 1.0.0 | Feb 18, 2026 | Initial release - 52 scripts, full tutorial |

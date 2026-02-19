@@ -2,6 +2,19 @@
 
 All notable changes to the OpenClaw Jarvis-Like Memory System blueprint.
 
+## [1.3.0] - 2026-02-19
+
+### Added
+- **Complete command reference** in README - documents all 4 memory commands with usage
+- **Known Issues section** - documents the compaction timing window issue
+- Command table showing what each command does, which layer it hits, and when to use it
+
+### Changed
+- README Memory Commands section expanded with detailed reference table
+- Added data flow diagrams for both manual and automated memory storage
+
+---
+
 ## [1.2.0] - 2026-02-19
 
 ### Added

@@ -2,9 +2,10 @@
 
 > **Build an AI assistant that actually remembers you.**
 > 
-> **Version: 1.2.0** (February 19, 2026)
+> **Version: 1.3.0** (February 19, 2026)
 > 
 > **Changelog:**
+> - v1.3.0: Added complete command reference, documented known issues with compaction timing
 > - v1.2.0: Added automatic backup to installer, RESTORE.md documentation
 > - v1.1.0: Added uninstall.sh recovery script
 > - v1.0.0: Initial release with 52 scripts, complete tutorial
@@ -172,35 +173,44 @@ This interactive script will:
 
 ## 🏗️ Architecture
 
-### Memory Commands
+### Memory Commands Reference
+
+These are the commands you can use once the memory system is installed:
+
+| Command | What It Does | Data Layer | When to Use |
+|---------|--------------|------------|-------------|
+| **`save mem`** | Saves ALL conversation turns to Redis buffer + daily file | Layer 1 (Redis) + Layer 2 (Files) | When you want to capture current session |
+| **`save q`** | Stores current exchange to Qdrant with embeddings | Layer 3 (Qdrant) | When you want immediate long-term searchable memory |
+| **`q <topic>`** | Semantic search across all stored memories | Layer 3 (Qdrant) | Find past conversations by meaning, not keywords |
+| **`remember this`** | Quick note to daily file (manual note) | Layer 2 (Files) | Important facts you want to log |
+
+**Data Flow:**
+```
+User: "save mem"     → Redis Buffer + File Log (fast, persistent)
+User: "save q"       → Qdrant Vector DB (semantic, searchable)
+User: "q <topic>"    → Searches embeddings for similar content
+```
+
+### Automated Flow
 
 ```
-User: "save mem"     → Redis + File (all turns)
-User: "save q"       → Qdrant (semantic, embeddings)
-User: "q <topic>"    → Semantic search
-User: "remember this" → Quick note to file
-```
+Every Message (if heartbeat enabled)
+     ↓
+Redis Buffer (fast, survives session reset)
+     ↓
+File Log (permanent, human-readable markdown)
+     ↓
+[Optional: User says "save q"] → Qdrant (semantic search)
 
-### Data Flow
+Daily 3:00 AM (cron)
+     ↓
+Redis Buffer → Flush → Qdrant (with embeddings)
+     ↓
+Clear Redis (ready for new day)
 
-```
-Every Message
+Daily 3:30 AM (cron)
      ↓
-Redis Buffer (fast)
-     ↓
-File Log (permanent)
-     ↓
-[Optional: "save q"] → Qdrant (semantic)
-
-Daily 3:00 AM
-     ↓
-Redis Buffer → Flush → Qdrant
-     ↓
-Clear Redis
-
-Daily 3:30 AM
-     ↓
-Daily Files → Backup → Archive
+Daily Files → Sliding Backup → Archive
 ```
 
 ## 📁 Project Structure
@@ -388,6 +398,32 @@ curl -s http://10.0.0.40:6333/collections/kimi_memories | python3 -c "import sys
 # Recent memories
 python3 skills/mem-redis/scripts/mem_retrieve.py --limit 10
 ```
+
+## ⚠️ Known Issues
+
+### Gap Between Heartbeat/Save and Compaction
+
+**The Issue:**  
+There is a small timing window where data can be lost:
+
+1. OpenClaw session JSONL files get "compacted" (rotated/archived) periodically
+2. If a heartbeat or `save mem` runs *after* compaction but *before* a new session starts, it may miss the last few turns
+3. The Redis buffer tracks turns by number, but the source file has changed
+
+**Impact:**  
+- Low - happens only during active session compaction
+- Affects only the most recent turns if timing is unlucky
+- Daily file logs usually still have the data
+
+**Workaround:**  
+- Run `save mem` manually before ending important sessions
+- The cron job at 3:00 AM catches anything missed during the day
+- Use `save q` for critical exchanges (goes directly to Qdrant immediately)
+
+**Status:**  
+This is a known architectural limitation with session file rotation. The daily flush is the safety net.
+
+---
 
 ## 🐛 Troubleshooting
 
