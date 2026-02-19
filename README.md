@@ -48,6 +48,21 @@ source .memory_env
 python3 skills/mem-redis/scripts/save_mem.py --user-id yourname
 ```
 
+### 🧹 Uninstall/Recovery
+
+If you need to remove the memory system:
+
+```bash
+./uninstall.sh
+```
+
+This interactive script will:
+- Remove cron jobs
+- Clear Redis buffer
+- Optionally delete Qdrant collections (your memories)
+- Remove configuration files
+- Optionally remove all skill files
+
 ## 📋 Prerequisites
 
 ### Required Infrastructure

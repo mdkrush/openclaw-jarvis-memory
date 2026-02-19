@@ -25,6 +25,7 @@ This blueprint contains everything needed to build a production-grade, multi-lay
 ```
 blueprint/
 ├── install.sh                  ⭐ Main installer
+├── uninstall.sh                🧹 Recovery script
 ├── README.md                   ⭐ Start here
 ├── TUTORIAL.md                 🎬 YouTube script
 ├── docker-compose.yml          🐳 Infrastructure
@@ -154,6 +155,7 @@ Before sharing this blueprint, verify:
 |------|-------------|
 | MEM_DIAGRAM.md | Complete architecture documentation |
 | install.sh | Automated installer |
+| uninstall.sh | Recovery/uninstall script |
 | TUTORIAL.md | YouTube video script |
 | docker-compose.yml | Infrastructure as code |
 
