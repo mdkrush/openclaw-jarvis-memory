@@ -1,0 +1,227 @@
+#!/bin/bash
+# OpenClaw Jarvis-Like Memory System - Recovery/Uninstall Script
+# This script reverses all changes made by install.sh
+
+set -e
+
+# Colors for output
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+echo "═══════════════════════════════════════════════════════════════"
+echo "  OpenClaw Jarvis-Like Memory System - Recovery Tool"
+echo "═══════════════════════════════════════════════════════════════"
+echo ""
+echo -e "${YELLOW}⚠️  This will undo changes made by the installer${NC}"
+echo ""
+
+# Configuration
+WORKSPACE_DIR="${WORKSPACE_DIR:-$HOME/.openclaw/workspace}"
+USER_ID="${USER_ID:-$(whoami)}"
+REDIS_HOST="${REDIS_HOST:-10.0.0.36}"
+REDIS_PORT="${REDIS_PORT:-6379}"
+QDRANT_URL="${QDRANT_URL:-http://10.0.0.40:6333}"
+
+# Track what we've done
+REMOVED_ITEMS=()
+
+# Function to confirm action
+confirm() {
+    read -p "$1 (y/N): " response
+    [[ "$response" =~ ^[Yy]$ ]]
+}
+
+# Function to log removal
+log_remove() {
+    REMOVED_ITEMS+=("$1")
+    echo -e "${GREEN}  ✓ $1${NC}"
+}
+
+# Step 1: Remove cron jobs
+echo -e "${YELLOW}[1/6] Removing cron jobs...${NC}"
+if confirm "Remove memory system cron jobs (3:00 AM & 3:30 AM backups)"; then
+    CRON_FILE=$(mktemp)
+    crontab -l 2>/dev/null > "$CRON_FILE" || true
+    
+    # Remove memory-related cron entries
+    grep -v "cron_backup.py" "$CRON_FILE" > "${CRON_FILE}.new" || true
+    grep -v "sliding_backup.sh" "${CRON_FILE}.new" > "$CRON_FILE" || true
+    grep -v "# Memory System -" "$CRON_FILE" > "${CRON_FILE}.new" || true
+    mv "${CRON_FILE}.new" "$CRON_FILE"
+    
+    # Clean up empty lines at end
+    sed -i -e :a -e '/^\n*$/{$d;N;};/\n$/ba' "$CRON_FILE" 2>/dev/null || true
+    
+    crontab "$CRON_FILE"
+    rm "$CRON_FILE"
+    log_remove "Removed cron jobs"
+else
+    echo "  ⏭️  Skipped"
+fi
+
+# Step 2: Clear Redis buffer
+echo ""
+echo -e "${YELLOW}[2/6] Clearing Redis buffer...${NC}"
+if confirm "Clear Redis memory buffer (mem:$USER_ID)"; then
+    if python3 <<EOF 2>/dev/null; then
+import redis
+import sys
+try:
+    r = redis.Redis(host='$REDIS_HOST', port=$REDIS_PORT, decode_responses=True)
+    key = "mem:$USER_ID"
+    count = r.llen(key)
+    if count > 0:
+        r.delete(key)
+        print(f"  Deleted {count} items from Redis")
+    else:
+        print("  Buffer was already empty")
+except Exception as e:
+    print(f"  Could not connect to Redis: {e}")
+EOF
+        log_remove "Cleared Redis buffer"
+    else
+        echo -e "${RED}  ✗ Could not clear Redis${NC}"
+    fi
+else
+    echo "  ⏭️  Skipped"
+fi
+
+# Step 3: Delete Qdrant collections
+echo ""
+echo -e "${YELLOW}[3/6] Managing Qdrant collections...${NC}"
+echo -e "${BLUE}Available collections:${NC}"
+curl -s "$QDRANT_URL/collections" 2>/dev/null | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    collections = data.get('result', {}).get('collections', [])
+    for c in collections:
+        name = c.get('name', '')
+        if name in ['kimi_memories', 'kimi_kb', 'private_court_docs']:
+            print(f'  • {name}')
+except:
+    print('  (Could not fetch collections)')
+" || echo "  (Qdrant not accessible)"
+
+echo ""
+echo -e "${RED}⚠️  WARNING: This permanently deletes ALL stored memories!${NC}"
+if confirm "Delete Qdrant collections (kimi_memories, kimi_kb, private_court_docs)"; then
+    for collection in kimi_memories kimi_kb private_court_docs; do
+        response=$(curl -s -X DELETE "$QDRANT_URL/collections/$collection" 2>/dev/null)
+        if echo "$response" | grep -q '"status":"ok"' 2>/dev/null; then
+            echo "  ✓ Deleted: $collection"
+        else
+            echo "  ⚠️  $collection (may not exist)"
+        fi
+    done
+    log_remove "Deleted Qdrant collections"
+else
+    echo "  ⏭️  Skipped (collections preserved)"
+fi
+
+# Step 4: Remove environment file
+echo ""
+echo -e "${YELLOW}[4/6] Removing environment configuration...${NC}"
+ENV_FILE="$WORKSPACE_DIR/.memory_env"
+if [ -f "$ENV_FILE" ]; then
+    if confirm "Remove .memory_env file"; then
+        rm "$ENV_FILE"
+        log_remove "Removed .memory_env"
+    else
+        echo "  ⏭️  Skipped"
+    fi
+else
+    echo "  ℹ️  .memory_env not found"
+fi
+
+# Step 5: Remove HEARTBEAT.md changes
+echo ""
+echo -e "${YELLOW}[5/6] Checking HEARTBEAT.md...${NC}"
+HEARTBEAT_FILE="$WORKSPACE_DIR/HEARTBEAT.md"
+if [ -f "$HEARTBEAT.md" ]; then
+    if grep -q "Memory Buffer (Every Heartbeat)" "$HEARTBEAT.md" 2>/dev/null; then
+        echo -e "${BLUE}HEARTBEAT.md contains memory automation.${NC}"
+        echo "You may want to edit it manually to remove memory-related sections."
+    fi
+fi
+
+if confirm "Remove auto-generated HEARTBEAT.md (if it matches our template)"; then
+    if [ -f "$HEARTBEAT.md" ] && grep -q "Generated by OpenClaw Jarvis Memory installer" "$HEARTBEAT.md" 2>/dev/null; then
+        rm "$HEARTBEAT.md"
+        log_remove "Removed auto-generated HEARTBEAT.md"
+    else
+        echo "  ℹ️  HEARTBEAT.md not removed (may contain custom changes)"
+    fi
+else
+    echo "  ⏭️  Skipped"
+fi
+
+# Step 6: Remove state file
+echo ""
+echo -e "${YELLOW}[6/6] Cleaning up state files...${NC}"
+STATE_FILE="$WORKSPACE_DIR/.mem_last_turn"
+if [ -f "$STATE_FILE" ]; then
+    if confirm "Remove turn tracking state file"; then
+        rm "$STATE_FILE"
+        log_remove "Removed .mem_last_turn"
+    else
+        echo "  ⏭️  Skipped"
+    fi
+else
+    echo "  ℹ️  No state file found"
+fi
+
+# Optional: Remove all skill files
+if confirm "⚠️  FULL UNINSTALL: Remove ALL skill files and scripts"; then
+    echo ""
+    echo -e "${RED}Removing all skill files...${NC}"
+    
+    for skill in mem-redis qdrant-memory task-queue; do
+        SKILL_DIR="$WORKSPACE_DIR/skills/$skill"
+        if [ -d "$SKILL_DIR" ]; then
+            rm -rf "$SKILL_DIR"
+            log_remove "Removed skills/$skill"
+        fi
+    done
+    
+    # Also remove memory directory if empty
+    if [ -d "$WORKSPACE_DIR/memory" ]; then
+        if [ -z "$(ls -A "$WORKSPACE_DIR/memory" 2>/dev/null)" ]; then
+            rmdir "$WORKSPACE_DIR/memory" 2>/dev/null && log_remove "Removed empty memory directory"
+        else
+            echo -e "${YELLOW}  ℹ️  memory/ directory contains files - not removed${NC}"
+        fi
+    fi
+else
+    echo ""
+    echo -e "${BLUE}Keeping skill files for manual review${NC}"
+fi
+
+# Summary
+echo ""
+echo "═══════════════════════════════════════════════════════════════"
+echo -e "${GREEN}  Recovery Complete!${NC}"
+echo "═══════════════════════════════════════════════════════════════"
+echo ""
+
+if [ ${#REMOVED_ITEMS[@]} -eq 0 ]; then
+    echo "No changes were made."
+else
+    echo "Items removed/reset:"
+    for item in "${REMOVED_ITEMS[@]}"; do
+        echo "  ✓ $item"
+    done
+fi
+
+echo ""
+echo -e "${BLUE}Remaining cleanup (if full uninstall was not selected):${NC}"
+echo "  • Skill files remain in: $WORKSPACE_DIR/skills/"
+echo "  • Daily memory files remain in: $WORKSPACE_DIR/memory/"
+echo "  • Backups remain in: /root/.openclaw/workspace/memory/"
+echo ""
+echo "To reinstall later, run: ./install.sh"
+echo ""
+echo "🧹 Cleanup complete!"
