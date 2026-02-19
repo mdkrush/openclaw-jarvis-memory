@@ -31,8 +31,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-import redis
-
 REDIS_HOST = os.getenv("REDIS_HOST", "127.0.0.1")
 REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
 USER_ID = os.getenv("USER_ID", "rob")
@@ -151,6 +149,7 @@ def append_to_redis(user_id: str, messages: List[ParsedMessage]) -> int:
     if not messages:
         return 0
 
+    import redis  # lazy import so --dry-run works without deps
     r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
 
     key = f"mem:{user_id}"

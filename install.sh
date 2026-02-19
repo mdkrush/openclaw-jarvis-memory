@@ -105,10 +105,18 @@ if ! have_cmd curl; then
   fi
 fi
 
+# Useful for quick testing (optional)
+if ! have_cmd redis-cli; then
+  echo "  • Installing redis-cli (redis-tools)"
+  if have_cmd apt-get; then
+    install_pkg_debian redis-tools
+  fi
+fi
+
 if ! have_cmd python3; then
   echo "  • Installing python3"
   if have_cmd apt-get; then
-    install_pkg_debian python3 python3-pip
+    install_pkg_debian python3 python3-pip python3-venv
   else
     echo -e "${RED}  ✗ Python 3 not found. Please install Python 3.8+${NC}"
     exit 1
@@ -118,7 +126,7 @@ fi
 if ! have_cmd pip3; then
   echo "  • Installing pip3"
   if have_cmd apt-get; then
-    install_pkg_debian python3-pip
+    install_pkg_debian python3-pip python3-venv
   else
     echo -e "${RED}  ✗ pip3 not found. Please install python3-pip${NC}"
     exit 1
