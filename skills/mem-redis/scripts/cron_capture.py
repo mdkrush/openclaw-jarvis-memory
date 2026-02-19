@@ -185,6 +185,7 @@ def main() -> None:
     parser.add_argument("--user-id", default=USER_ID)
     parser.add_argument("--include-thinking", action="store_true", help="Store thinking into mem_thinking:<user>")
     parser.add_argument("--sessions-dir", default=str(DEFAULT_SESSIONS_DIR))
+    parser.add_argument("--dry-run", action="store_true", help="Parse + update state, but do not write to Redis")
     args = parser.parse_args()
 
     sessions_dir = Path(args.sessions_dir)
@@ -210,6 +211,12 @@ def main() -> None:
         st[key] = {"offset": end_offset, "size": cur_size, "updated_at": _now_iso()}
         save_state(st)
         print("[cron_capture] No new user/assistant messages")
+        return
+
+    if args.dry_run:
+        st[key] = {"offset": end_offset, "size": cur_size, "updated_at": _now_iso()}
+        save_state(st)
+        print(f"[cron_capture] DRY RUN: would append {len(messages)} messages to Redis mem:{args.user_id}")
         return
 
     count = append_to_redis(args.user_id, messages)

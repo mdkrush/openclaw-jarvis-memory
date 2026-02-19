@@ -207,6 +207,11 @@ File Log (permanent, human-readable markdown)
 
 Cost note: cron capture avoids LLM heartbeats entirely and is the recommended default for token savings.
 
+Cron capture quick test (no Redis required):
+```bash
+python3 skills/mem-redis/scripts/cron_capture.py --dry-run --user-id yourname
+```
+
 Daily 3:00 AM (cron)
      ↓
 Redis Buffer → Flush → Qdrant (with embeddings)
