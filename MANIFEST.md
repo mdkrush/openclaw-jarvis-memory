@@ -1,6 +1,6 @@
 # OpenClaw Jarvis-Like Memory System - Complete Blueprint
 
-> **Version:** 1.4.0  
+> **Version:** 1.5.0  
 > **Date:** February 19, 2026  
 > **Purpose:** Build an AI assistant that actually remembers
 

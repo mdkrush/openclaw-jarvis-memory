@@ -2,6 +2,35 @@
 
 All notable changes to the OpenClaw Jarvis-Like Memory System blueprint.
 
+## [1.5.0] - 2026-02-19
+
+### Added (Community PR #1 by ecomm-michael)
+- **cron_capture.py** - Token-free transcript capture via cron (no LLM calls, saves money)
+- **Safer Redis→Qdrant flush** - Only clears Redis if ALL user turns stored successfully
+- **Auto-dependency installation** - install.sh now auto-installs Docker, Python, Redis if missing
+- **llm_router.py** - Routes to cheap LLMs (Minimax) via OpenRouter with fallback
+- **metadata_and_compact.py** - Auto-generates tags, titles, summaries using cheap LLM
+- **tagger.py** - Content tagging for better organization
+- **Portable defaults** - Changed hardcoded 10.0.0.x IPs to localhost (127.0.0.1) with env overrides
+- **PEP 668 compliance** - Creates Python venv if pip --user blocked
+
+### Changed
+- **cron_backup.py** - Better error handling, preserves Redis on Qdrant failure
+- **hb_append.py** - Doesn't store thinking in main buffer (separate mem_thinking key)
+- **auto_store.py** - Uses SHA256 instead of MD5 for content hashing (portable)
+- **init_kimi_memories.py** - Env-driven config with defaults
+- **task-queue scripts** - Removed hardcoded SSH credentials (security cleanup)
+- **docker-compose.yml** - Disabled container healthcheck (qdrant image lacks curl)
+
+### Security
+- Changed default USER_ID from "rob" to "yourname" in all scripts (privacy)
+- Removed hardcoded credentials from task-queue
+
+### Contributors
+- **ecomm-michael** - Major contribution: portability, cron capture, safer backups, metadata pipeline
+
+---
+
 ## [1.4.0] - 2026-02-19
 
 ### Added

@@ -4,9 +4,10 @@
 > 
 > **GitHub:** https://github.com/mdkrush/openclaw-jarvis-memory
 > 
-> **Version: 1.4.0** (February 19, 2026)
+> **Version: 1.5.0** (February 19, 2026)
 > 
 > **Changelog:**
+> - v1.5.0: Merged community PR #1 - cron capture (token-free), safer backups, auto-dependencies, portable defaults
 > - v1.4.0: Added compaction threshold recommendation (90%) with manual setup steps
 > - v1.3.0: Added complete command reference, documented known issues with compaction timing
 > - v1.2.0: Added automatic backup to installer, RESTORE.md documentation
@@ -222,6 +223,43 @@ Daily 3:30 AM (cron)
      ↓
 Daily Files → Sliding Backup → Archive
 ```
+
+### Cron Capture (Token-Free Alternative)
+
+**New in v1.5.0:** `cron_capture.py` provides a **zero-token** alternative to heartbeat capture.
+
+**Why use it:**
+- **Saves money** - No LLM calls to capture transcripts
+- **Runs every 5 minutes** via cron (no session API needed)
+- **Tracks file position** - Only reads NEW content since last run
+- **Optional thinking capture** - Store model thinking separately
+
+**Setup:**
+```bash
+# Add to crontab (runs every 5 minutes)
+*/5 * * * * cd ~/.openclaw/workspace/blueprint && python3 skills/mem-redis/scripts/cron_capture.py --user-id yourname
+```
+
+**Test it:**
+```bash
+# Dry run (shows what would be captured)
+python3 skills/mem-redis/scripts/cron_capture.py --dry-run --user-id yourname
+
+# Run for real
+python3 skills/mem-redis/scripts/cron_capture.py --user-id yourname
+```
+
+**Capture Options Comparison:**
+
+| Method | Token Cost | Trigger | Best For |
+|--------|------------|---------|----------|
+| **Heartbeat** | ~1K tokens/turn | Every OpenClaw message | Real-time, always-on |
+| **Cron Capture** | **FREE** | Every 5 minutes | Cost-conscious, periodic |
+| **Manual `save mem`** | FREE | On demand | Important sessions |
+
+**Note:** You can use BOTH - cron capture for background accumulation, heartbeat for real-time critical sessions.
+
+---
 
 ## 📁 Project Structure
 
