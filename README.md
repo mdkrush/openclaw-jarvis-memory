@@ -197,13 +197,15 @@ User: "q <topic>"    → Searches embeddings for similar content
 ### Automated Flow
 
 ```
-Every Message (if heartbeat enabled)
+Every Message (capture option A: heartbeat, capture option B: cron capture)
      ↓
 Redis Buffer (fast, survives session reset)
      ↓
 File Log (permanent, human-readable markdown)
      ↓
 [Optional: User says "save q"] → Qdrant (semantic search)
+
+Cost note: cron capture avoids LLM heartbeats entirely and is the recommended default for token savings.
 
 Daily 3:00 AM (cron)
      ↓
@@ -268,10 +270,10 @@ Create `~/.openclaw/workspace/.memory_env`:
 
 ```bash
 export USER_ID="yourname"
-export REDIS_HOST="10.0.0.36"
+export REDIS_HOST="127.0.0.1"
 export REDIS_PORT="6379"
-export QDRANT_URL="http://10.0.0.40:6333"
-export OLLAMA_URL="http://10.0.0.10:11434"
+export QDRANT_URL="http://127.0.0.1:6333"
+export OLLAMA_URL="http://127.0.0.1:11434"
 ```
 
 ### Step 4: Initialize Qdrant Collections

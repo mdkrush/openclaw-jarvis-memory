@@ -14,10 +14,10 @@ NC='\033[0m' # No Color
 # Configuration
 WORKSPACE_DIR="${WORKSPACE_DIR:-$HOME/.openclaw/workspace}"
 USER_ID="${USER_ID:-$(whoami)}"
-REDIS_HOST="${REDIS_HOST:-10.0.0.36}"
+REDIS_HOST="${REDIS_HOST:-127.0.0.1}"
 REDIS_PORT="${REDIS_PORT:-6379}"
-QDRANT_URL="${QDRANT_URL:-http://10.0.0.40:6333}"
-OLLAMA_URL="${OLLAMA_URL:-http://10.0.0.10:11434}"
+QDRANT_URL="${QDRANT_URL:-http://127.0.0.1:6333}"
+OLLAMA_URL="${OLLAMA_URL:-http://127.0.0.1:11434}"
 
 # Backup directory
 BACKUP_DIR="$WORKSPACE_DIR/.backups"

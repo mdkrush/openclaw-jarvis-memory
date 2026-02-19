@@ -35,17 +35,17 @@ import uuid
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 
-QDRANT_URL = "http://10.0.0.40:6333"
-COLLECTION_NAME = "kimi_memories"
-OLLAMA_URL = "http://10.0.0.10:11434/v1"
+QDRANT_URL = os.getenv("QDRANT_URL", "http://127.0.0.1:6333")
+COLLECTION_NAME = os.getenv("QDRANT_COLLECTION", "kimi_memories")
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434/v1")
 
 # In-memory cache for deduplication (per process)
 _recent_hashes = set()
 
 def get_content_hash(user_msg: str, ai_response: str) -> str:
-    """Generate hash for deduplication"""
-    content = f"{user_msg.strip()}::{ai_response.strip()}"
-    return hashlib.md5(content.encode()).hexdigest()
+    """Generate hash for deduplication (stable across platforms)."""
+    content = f"{user_msg.strip()}::{ai_response.strip()}".encode("utf-8", errors="replace")
+    return hashlib.sha256(content).hexdigest()
 
 def is_duplicate(user_id: str, user_msg: str, ai_response: str) -> bool:
     """

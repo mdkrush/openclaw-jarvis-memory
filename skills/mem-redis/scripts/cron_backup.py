@@ -17,8 +17,10 @@ import argparse
 from datetime import datetime, timezone
 from pathlib import Path
 
-# Add qdrant-memory to path
-sys.path.insert(0, '/root/.openclaw/workspace/skills/qdrant-memory/scripts')
+# Add qdrant-memory to path (portable)
+from pathlib import Path as _Path
+WORKSPACE = _Path(os.getenv("OPENCLAW_WORKSPACE", str(_Path.home() / ".openclaw" / "workspace")))
+sys.path.insert(0, str(WORKSPACE / "skills" / "qdrant-memory" / "scripts"))
 
 try:
     from auto_store import store_conversation_turn
@@ -28,7 +30,7 @@ except ImportError:
     print("Warning: Qdrant storage not available, will simulate", file=sys.stderr)
 
 # Config
-REDIS_HOST = os.getenv("REDIS_HOST", "10.0.0.36")
+REDIS_HOST = os.getenv("REDIS_HOST", "127.0.0.1")
 REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
 USER_ID = os.getenv("USER_ID", "rob")
 
@@ -65,35 +67,58 @@ def store_to_qdrant(turns, user_id):
             print(f"  ... and {len(turns) - 3} more", file=sys.stderr)
         return True
     
+    # Ensure chronological order (older -> newer)
+    try:
+        turns_sorted = sorted(turns, key=lambda t: (t.get('timestamp', ''), t.get('turn', 0)))
+    except Exception:
+        turns_sorted = turns
+
+    user_turns = [t for t in turns_sorted if t.get('role') == 'user']
+    if not user_turns:
+        return True
+
     success_count = 0
-    for i, turn in enumerate(turns):
+    attempted = 0
+
+    for i, turn in enumerate(turns_sorted):
+        if turn.get('role') != 'user':
+            continue
+        attempted += 1
         try:
-            # Store user message
-            if turn['role'] == 'user':
-                # Look for paired assistant response
-                ai_response = ""
-                if i + 1 < len(turns) and turns[i + 1]['role'] == 'assistant':
-                    ai_response = turns[i + 1]['content']
-                
-                store_conversation_turn(
-                    user_message=turn['content'],
-                    ai_response=ai_response,
-                    user_id=user_id,
-                    turn_number=turn.get('turn', i),
-                    conversation_id=f"mem-buffer-{turn.get('timestamp', 'unknown')[:10]}"
-                )
+            # Pair with the next assistant message in chronological order (best effort)
+            ai_response = ""
+            j = i + 1
+            while j < len(turns_sorted):
+                if turns_sorted[j].get('role') == 'assistant':
+                    ai_response = turns_sorted[j].get('content', '')
+                    break
+                if turns_sorted[j].get('role') == 'user':
+                    break
+                j += 1
+
+            result = store_conversation_turn(
+                user_message=turn.get('content', ''),
+                ai_response=ai_response,
+                user_id=user_id,
+                turn_number=turn.get('turn', i),
+                conversation_id=f"mem-buffer-{turn.get('timestamp', 'unknown')[:10]}"
+            )
+
+            # store_conversation_turn returns success/skipped; treat skipped as ok
+            if result.get('success') or result.get('skipped'):
                 success_count += 1
         except Exception as e:
-            print(f"Error storing turn {turn.get('turn', '?')}: {e}", file=sys.stderr)
-            continue
-    
-    return success_count > 0
+            print(f"Error storing user turn {turn.get('turn', '?')}: {e}", file=sys.stderr)
+
+    # Only consider Qdrant storage successful if we stored/skipped ALL user turns.
+    return attempted > 0 and success_count == attempted
 
 def store_to_file(turns, user_id):
     """Fallback: Store turns to JSONL file."""
     from datetime import datetime
     
-    backup_dir = Path("/root/.openclaw/workspace/memory/redis-backups")
+    workspace = Path(os.getenv("OPENCLAW_WORKSPACE", str(Path.home() / ".openclaw" / "workspace")))
+    backup_dir = workspace / "memory" / "redis-backups"
     backup_dir.mkdir(exist_ok=True)
     
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -143,19 +168,23 @@ def main():
     if not args.dry_run:
         qdrant_success = store_to_qdrant(turns, args.user_id)
         if qdrant_success:
-            print(f"✅ Stored {len(turns)} turns to Qdrant")
+            print(f"✅ Stored Redis buffer to Qdrant (all user turns)")
+        else:
+            print("⚠️ Qdrant storage incomplete; will NOT clear Redis", file=sys.stderr)
     else:
         print("[DRY RUN] Would attempt Qdrant storage")
         qdrant_success = True  # Dry run pretends success
     
-    # If Qdrant failed, try file backup
+    # If Qdrant failed/incomplete, try file backup (still do NOT clear Redis unless user chooses)
     file_success = False
     if not qdrant_success:
-        print("⚠️ Qdrant storage failed, trying file backup...")
+        print("⚠️ Qdrant storage failed/incomplete, writing file backup (Redis preserved)...")
         file_success = store_to_file(turns, args.user_id)
         if not file_success:
             print("❌ Both Qdrant and file backup failed - Redis buffer preserved")
             sys.exit(1)
+        # Exit non-zero so monitoring can alert; keep Redis for re-try.
+        sys.exit(1)
     
     # Clear Redis (only if not dry-run)
     if args.dry_run:

@@ -15,7 +15,7 @@ import argparse
 from datetime import datetime, timezone
 
 # Config
-REDIS_HOST = os.getenv("REDIS_HOST", "10.0.0.36")
+REDIS_HOST = os.getenv("REDIS_HOST", "127.0.0.1")
 REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
 USER_ID = os.getenv("USER_ID", "rob")
 

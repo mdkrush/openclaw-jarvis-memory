@@ -17,14 +17,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 # Config
-REDIS_HOST = os.getenv("REDIS_HOST", "10.0.0.36")
+REDIS_HOST = os.getenv("REDIS_HOST", "127.0.0.1")
 REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
 USER_ID = os.getenv("USER_ID", "rob")
 
-# Paths
-WORKSPACE = Path("/root/.openclaw/workspace")
+# Paths (portable)
+WORKSPACE = Path(os.getenv("OPENCLAW_WORKSPACE", str(Path.home() / ".openclaw" / "workspace")))
 MEMORY_DIR = WORKSPACE / "memory"
-SESSIONS_DIR = Path("/root/.openclaw/agents/main/sessions")
+SESSIONS_DIR = Path(os.getenv("OPENCLAW_SESSIONS_DIR", str(Path.home() / ".openclaw" / "agents" / "main" / "sessions")))
 STATE_FILE = WORKSPACE / ".mem_last_turn"
 
 def get_session_transcript():
@@ -68,8 +68,11 @@ def parse_turns_since(last_turn_num):
                                 if isinstance(item, dict):
                                     if 'text' in item:
                                         content += item['text']
+                                    # Intentionally do NOT store model thinking in the main buffer.
+                                    # If you need thinking, use cron_capture.py --include-thinking to store it
+                                    # separately under mem_thinking:<user_id>.
                                     elif 'thinking' in item:
-                                        content += f"[thinking: {item['thinking'][:200]}...]"
+                                        pass
                         elif isinstance(msg.get('content'), str):
                             content = msg['content']
                         

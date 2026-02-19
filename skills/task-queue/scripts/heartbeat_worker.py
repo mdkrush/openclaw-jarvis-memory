@@ -13,10 +13,14 @@ import subprocess
 import requests
 from datetime import datetime
 
-REDIS_HOST = os.environ.get("REDIS_HOST", "10.0.0.36")
+REDIS_HOST = os.environ.get("REDIS_HOST", "127.0.0.1")
 REDIS_PORT = int(os.environ.get("REDIS_PORT", 6379))
 REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD", None)
-OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
+OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://127.0.0.1:11434")
+TASK_LLM_MODEL = os.environ.get("TASK_LLM_MODEL", "kimi-k2.5:cloud")
+DEFAULT_TARGET_HOST = os.environ.get("TASK_SSH_HOST", "")
+DEFAULT_SSH_USER = os.environ.get("TASK_SSH_USER", "")
+DEFAULT_SUDO_PASS = os.environ.get("TASK_SUDO_PASS", "")
 
 def get_redis():
     return redis.Redis(
@@ -59,31 +63,44 @@ def clean_json_content(content):
         cleaned = cleaned[:-3]
     return cleaned.strip()
 
-def ask_gpt_for_commands(task_description, target_host="10.0.0.38", ssh_user="n8n", sudo_pass="passw0rd"):
+def ask_gpt_for_commands(task_description, target_host=None, ssh_user=None, sudo_pass=None):
     """
     Send task to Ollama/GPT to generate SSH commands.
     Returns dict with commands, expected results, and explanation.
     """
+    target_host = target_host or DEFAULT_TARGET_HOST
+    ssh_user = ssh_user or DEFAULT_SSH_USER
+    sudo_pass = sudo_pass if sudo_pass is not None else DEFAULT_SUDO_PASS
+
+    if not target_host or not ssh_user:
+        raise ValueError("TASK_SSH_HOST and TASK_SSH_USER must be set (or passed explicitly)")
+
+    sudo_line = (
+        f"Sudo password: {sudo_pass}"
+        if sudo_pass
+        else "Sudo password: (not provided; avoid sudo unless absolutely necessary)"
+    )
+
     system_prompt = f"""You have SSH access to {ssh_user}@{target_host}
-Sudo password: {sudo_pass}
+{sudo_line}
 
 Your job is to generate shell commands to complete the given task.
 Respond ONLY with valid JSON in this format:
 {{
-    "commands": [
-        "ssh -t {ssh_user}@{target_host} 'sudo apt update'",
-        "ssh -t {ssh_user}@{target_host} 'sudo apt install -y docker.io'"
-    ],
-    "expected_results": [
-        "apt updated successfully",
-        "docker installed and running"
-    ],
-    "explanation": "Updating packages and installing Docker"
+  "commands": [
+    "ssh -t {ssh_user}@{target_host} 'sudo apt update'",
+    "ssh -t {ssh_user}@{target_host} 'sudo apt install -y docker.io'"
+  ],
+  "expected_results": [
+    "apt updated successfully",
+    "docker installed and running"
+  ],
+  "explanation": "Updating packages and installing Docker"
 }}
 
 Rules:
-- Commands should use ssh -t (allocates TTY for sudo password) to execute on the remote host
-- Use sudo when needed (password: {sudo_pass})
+- Commands should use ssh -t (allocates TTY for sudo) to execute on the remote host
+- Use sudo only when needed
 - Keep commands safe and idempotent where possible
 - If task is unclear, ask for clarification in explanation
 
@@ -92,7 +109,8 @@ For Docker-related tasks:
 - Prefer latest stable versions
 - Use official images over community when available
 - Verify image exists before trying to pull
-- Map volumes as specified in the task (e.g., -v /root/html:/usr/share/nginx/html)"""
+- Map volumes as specified in the task (e.g., -v /root/html:/usr/share/nginx/html)
+"""
 
     user_prompt = f"Task: {task_description}\n\nGenerate the commands to complete this task."
 
@@ -100,7 +118,7 @@ For Docker-related tasks:
         response = requests.post(
             f"{OLLAMA_URL}/api/chat",
             json={
-                "model": "kimi-k2.5:cloud",
+                "model": TASK_LLM_MODEL,
                 "messages": [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
