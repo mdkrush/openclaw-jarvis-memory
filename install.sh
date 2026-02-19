@@ -160,14 +160,39 @@ mkdir -p "$WORKSPACE_DIR"/{skills/{mem-redis,qdrant-memory,task-queue}/scripts,m
 touch "$WORKSPACE_DIR/memory/.gitkeep"
 echo "  ✓ Directories created"
 
-# Step 3: Install Python dependencies
+# Step 3: Install Python dependencies (PEP 668-safe)
 echo -e "${YELLOW}[3/10] Installing Python dependencies...${NC}"
-if [ -f "$(dirname "$0")/requirements.txt" ]; then
-  pip3 install --user -r "$(dirname "$0")/requirements.txt" 2>/dev/null || pip3 install -r "$(dirname "$0")/requirements.txt"
+REQ_FILE="$(dirname "$0")/requirements.txt"
+PYTHON_BIN="python3"
+
+pip_user_install() {
+  if [ -f "$REQ_FILE" ]; then
+    pip3 install --user -r "$REQ_FILE"
+  else
+    pip3 install --user redis qdrant-client requests urllib3
+  fi
+}
+
+pip_venv_install() {
+  local venv_dir="$WORKSPACE_DIR/.venv"
+  python3 -m venv "$venv_dir"
+  "$venv_dir/bin/pip" install --upgrade pip setuptools wheel >/dev/null 2>&1 || true
+  if [ -f "$REQ_FILE" ]; then
+    "$venv_dir/bin/pip" install -r "$REQ_FILE"
+  else
+    "$venv_dir/bin/pip" install redis qdrant-client requests urllib3
+  fi
+  PYTHON_BIN="$venv_dir/bin/python"
+}
+
+# Try user install first (fast path)
+if pip_user_install >/dev/null 2>&1; then
+  echo "  ✓ Dependencies installed (pip --user)"
 else
-  pip3 install --user redis qdrant-client requests urllib3 2>/dev/null || pip3 install redis qdrant-client requests urllib3
+  echo "  ℹ️  pip --user install blocked (PEP 668). Creating venv in $WORKSPACE_DIR/.venv"
+  pip_venv_install
+  echo "  ✓ Dependencies installed (venv)"
 fi
-echo "  ✓ Dependencies installed"
 
 # Step 4: Test infrastructure connectivity
 echo -e "${YELLOW}[4/10] Testing infrastructure...${NC}"
@@ -237,6 +262,7 @@ export REDIS_HOST="$REDIS_HOST"
 export REDIS_PORT="$REDIS_PORT"
 export QDRANT_URL="$QDRANT_URL"
 export OLLAMA_URL="$OLLAMA_URL"
+export MEMORY_PYTHON="$PYTHON_BIN"
 export MEMORY_INITIALIZED="true"
 EOF
 echo "  ✓ Created $WORKSPACE_DIR/.memory_env"
@@ -246,7 +272,7 @@ echo -e "${YELLOW}[7/10] Initializing Qdrant collections...${NC}"
 if [ "$SKIP_QDRANT_INIT" = "1" ]; then
   echo "  ℹ️  SKIP_QDRANT_INIT=1 set; skipping Qdrant collection init"
 else
-  python3 <<EOF
+  "$PYTHON_BIN" <<EOF
 import sys
 sys.path.insert(0, "$WORKSPACE_DIR/skills/qdrant-memory/scripts")
 from init_kimi_memories import init_collection
@@ -267,7 +293,7 @@ else
   if ! grep -q "cron_backup.py" "$CRON_FILE" 2>/dev/null; then
       echo "" >> "$CRON_FILE"
       echo "# Memory System - Daily backup (3:00 AM)" >> "$CRON_FILE"
-      echo "0 3 * * * cd $WORKSPACE_DIR && python3 skills/mem-redis/scripts/cron_backup.py >> /var/log/memory-backup.log 2>&1 || true" >> "$CRON_FILE"
+      echo "0 3 * * * cd $WORKSPACE_DIR && $PYTHON_BIN skills/mem-redis/scripts/cron_backup.py >> /var/log/memory-backup.log 2>&1 || true" >> "$CRON_FILE"
   fi
 
   if ! grep -q "sliding_backup.sh" "$CRON_FILE" 2>/dev/null; then
@@ -366,7 +392,7 @@ if [ $BACKUP_COUNT -gt 0 ]; then
 fi
 echo "Next steps:"
 echo "  1. Source the environment: source $WORKSPACE_DIR/.memory_env"
-echo "  2. Test the system: python3 $WORKSPACE_DIR/skills/mem-redis/scripts/save_mem.py --user-id $USER_ID"
+echo "  2. Test the system: $PYTHON_BIN $WORKSPACE_DIR/skills/mem-redis/scripts/save_mem.py --user-id $USER_ID"
 echo "  3. Add to your HEARTBEAT.md to enable automatic saving"
 echo ""
 echo "To undo installation:"
