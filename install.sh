@@ -325,8 +325,12 @@ else
   "$PYTHON_BIN" <<EOF
 import sys
 sys.path.insert(0, "$WORKSPACE_DIR/skills/qdrant-memory/scripts")
-from init_kimi_memories import init_collection
-init_collection()
+# init_kimi_memories exposes create_collection() in this blueprint
+from init_kimi_memories import create_collection, collection_exists
+if not collection_exists():
+    ok = create_collection()
+    if not ok:
+        raise SystemExit(1)
 print("  ✓ kimi_memories collection ready")
 EOF
 fi
