@@ -2,6 +2,8 @@
 
 > **Build an AI assistant that actually remembers you.**
 > 
+> **GitHub:** https://github.com/mdkrush/openclaw-jarvis-memory
+> 
 > **Version: 1.4.0** (February 19, 2026)
 > 
 > **Changelog:**

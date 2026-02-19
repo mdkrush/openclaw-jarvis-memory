@@ -10,14 +10,14 @@ Saves ALL current session context to Redis short-term buffer. Runs automatically
 Does NOT clear buffer — preserves turns from other sessions until daily backup.
 
 ```bash
-python3 /root/.openclaw/workspace/skills/mem-redis/scripts/save_mem.py --user-id rob
+python3 /root/.openclaw/workspace/skills/mem-redis/scripts/save_mem.py --user-id YOUR_USER_ID
 ```
 
 Multiple sessions per day accumulate in Redis. Daily cron (3:00 AM) flushes everything to Qdrant.
 
 ## Email Check (Every Heartbeat)
 
-Checks Gmail for messages from Rob or Jennifer. **Respond to any new emails found.**
+Checks Gmail for messages from authorized senders. **Respond to any new emails found.**
 
 ```bash
 python3 /root/.openclaw/workspace/skills/qdrant-memory/scripts/hb_check_email.py
@@ -53,7 +53,7 @@ All OTHER heartbeat actions are **manual only** when explicitly requested.
 redis-cli -h 10.0.0.36 LRANGE delayed:notifications 0 0
 
 # Manual full context save to Redis (all current session turns)
-python3 /root/.openclaw/workspace/skills/mem-redis/scripts/save_mem.py --user-id rob
+python3 /root/.openclaw/workspace/skills/mem-redis/scripts/save_mem.py --user-id YOUR_USER_ID
 ```
 
 ## Daily Tasks
