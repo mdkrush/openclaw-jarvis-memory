@@ -20,7 +20,7 @@ from datetime import datetime
 # Config
 REDIS_HOST = os.getenv("REDIS_HOST", "10.0.0.36")
 REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
-USER_ID = os.getenv("USER_ID", "rob")
+USER_ID = os.getenv("USER_ID", "yourname")
 
 QDRANT_URL = os.getenv("QDRANT_URL", "http://10.0.0.40:6333")
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://10.0.0.10:11434/v1")

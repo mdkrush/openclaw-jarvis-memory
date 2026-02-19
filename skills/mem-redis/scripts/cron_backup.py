@@ -32,7 +32,7 @@ except ImportError:
 # Config
 REDIS_HOST = os.getenv("REDIS_HOST", "127.0.0.1")
 REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
-USER_ID = os.getenv("USER_ID", "rob")
+USER_ID = os.getenv("USER_ID", "yourname")
 
 def get_redis_items(user_id):
     """Get all items from Redis list."""

@@ -19,7 +19,7 @@ from pathlib import Path
 # Config
 REDIS_HOST = os.getenv("REDIS_HOST", "127.0.0.1")
 REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
-USER_ID = os.getenv("USER_ID", "rob")
+USER_ID = os.getenv("USER_ID", "yourname")
 
 # Paths (portable)
 WORKSPACE = Path(os.getenv("OPENCLAW_WORKSPACE", str(Path.home() / ".openclaw" / "workspace")))

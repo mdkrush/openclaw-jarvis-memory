@@ -168,7 +168,7 @@ def parse_and_store(filepath: Path, user_id: str) -> tuple:
 
 def main():
     parser = argparse.ArgumentParser(description="Harvest sessions by name")
-    parser.add_argument("--user-id", default="rob")
+    parser.add_argument("--user-id", default="yourname")
     parser.add_argument("sessions", nargs="*", help="Session filenames to process")
     args = parser.parse_args()
     

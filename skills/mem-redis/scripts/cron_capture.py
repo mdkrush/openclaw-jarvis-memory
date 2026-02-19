@@ -33,7 +33,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 REDIS_HOST = os.getenv("REDIS_HOST", "127.0.0.1")
 REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
-USER_ID = os.getenv("USER_ID", "rob")
+USER_ID = os.getenv("USER_ID", "yourname")
 
 DEFAULT_WORKSPACE = Path(os.getenv("OPENCLAW_WORKSPACE", str(Path.home() / ".openclaw" / "workspace")))
 DEFAULT_SESSIONS_DIR = Path(os.getenv("OPENCLAW_SESSIONS_DIR", str(Path.home() / ".openclaw" / "agents" / "main" / "sessions")))

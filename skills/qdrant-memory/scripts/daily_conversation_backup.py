@@ -29,7 +29,7 @@ OLLAMA_URL = "http://10.0.0.10:11434/v1"
 MEMORY_DIR = "/root/.openclaw/workspace/memory"
 
 # DEFAULT USER - Mem0-style: memories belong to user
-DEFAULT_USER_ID = "rob"
+DEFAULT_USER_ID = "yourname"
 
 def get_content_hash(user_msg: str, ai_response: str) -> str:
     """Generate hash for deduplication"""

@@ -260,7 +260,7 @@ def parse_session_file(filepath: Path) -> List[Dict]:
 
 def main():
     parser = argparse.ArgumentParser(description="Harvest session files to Qdrant")
-    parser.add_argument("--user-id", default="rob", help="User ID for storage")
+    parser.add_argument("--user-id", default="yourname", help="User ID for storage")
     parser.add_argument("--dry-run", action="store_true", help="Don't actually store")
     parser.add_argument("--limit", type=int, default=0, help="Limit sessions (0=all)")
     args = parser.parse_args()
