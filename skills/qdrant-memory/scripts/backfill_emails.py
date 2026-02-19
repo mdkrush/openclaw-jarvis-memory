@@ -12,9 +12,10 @@ import sys
 import subprocess
 
 # Authorized senders with their user IDs
+# Add your authorized emails here
 AUTHORIZED_SENDERS = {
-    "mdkrushr@gmail.com": "rob",
-    "mdkrusha@gmail.com": "jennifer"
+    # "your_email@gmail.com": "yourname",
+    # "spouse_email@gmail.com": "spousename"
 }
 
 # Gmail IMAP settings

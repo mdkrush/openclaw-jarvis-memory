@@ -16,9 +16,10 @@ import subprocess
 from datetime import datetime
 
 # Authorized senders with their user IDs for Qdrant storage
+# Add your authorized emails here
 AUTHORIZED_SENDERS = {
-    "mdkrushr@gmail.com": "rob",
-    "mdkrusha@gmail.com": "jennifer"
+    # "your_email@gmail.com": "yourname",
+    # "spouse_email@gmail.com": "spousename"
 }
 
 # Gmail IMAP settings

@@ -23,7 +23,9 @@ Checks Gmail for messages from Rob or Jennifer. **Respond to any new emails foun
 python3 /root/.openclaw/workspace/skills/qdrant-memory/scripts/hb_check_email.py
 ```
 
-**Authorized senders only:** `mdkrushr@gmail.com`, `mdkrusha@gmail.com`
+**Authorized senders only:** `your_email@gmail.com`, `spouse_email@gmail.com`
+
+*Edit `skills/qdrant-memory/scripts/hb_check_email.py` to set your authorized senders*
 
 **When new email found:**
 1. Read the email subject and body

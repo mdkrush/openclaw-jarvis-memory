@@ -130,7 +130,7 @@
 │   ┌─────────────────────────────────────────────────────────────┐   │
 │   │  CROSS-CUTTING: Email Integration (Gmail)                   │   │
 │   │  ├─ hb_check_email.py (Heartbeat)                          │   │
-│   │  └─ Authorized senders: mdkrushr/a@gmail.com               │   │
+│   │  └─ Authorized senders: your_email@gmail.com               │   │
 │   └─────────────────────────────────────────────────────────────┘   │
 │                                                                      │
 └─────────────────────────────────────────────────────────────────────┘
@@ -531,7 +531,7 @@ python3 harvest_sessions.py --user-id rob --limit 10
 ```
 ┌─────────────────────────────────────────────┐
 │  Gmail Inbox                               │
-│  (mdkrushr@gmail.com, mdkrusha@gmail.com) │
+│  (your_email@gmail.com)                    │
 └──────────────────┬──────────────────────────┘
                    │
         ┌──────────▼──────────┐
@@ -541,8 +541,8 @@ python3 harvest_sessions.py --user-id rob --limit 10
 ```
 
 ### Authorized Senders
-- `mdkrushr@gmail.com` (Rob)
-- `mdkrusha@gmail.com` (Jennifer)
+- `your_email@gmail.com` (Configure in hb_check_email.py)
+- Add more as needed
 
 ### Usage
 
