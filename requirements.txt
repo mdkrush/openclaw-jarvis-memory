@@ -1,0 +1,20 @@
+# Python dependencies for Jarvis-Like Memory System
+# Install with: pip3 install -r requirements.txt
+
+# Redis client for buffer layer
+redis>=5.0.0
+
+# Qdrant client for vector database
+qdrant-client>=1.7.0
+
+# HTTP requests for API calls
+requests>=2.31.0
+urllib3>=2.0.0
+
+# Date/time handling
+python-dateutil>=2.8.0
+
+# For Google integration (optional)
+# google-auth-oauthlib>=1.0.0
+# google-auth-httplib2>=0.1.0
+# google-api-python-client>=2.100.0

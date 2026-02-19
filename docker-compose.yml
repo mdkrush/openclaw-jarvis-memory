@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  # Vector Database - Long-term semantic memory
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant-memory
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant-storage:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__HTTP_PORT=6333
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/collections"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Fast Buffer - Short-term memory accumulation
+  redis:
+    image: redis:7-alpine
+    container_name: redis-memory
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Embeddings - Generate vectors for semantic search
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama-embeddings
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    restart: unless-stopped
+    # Pull the embedding model on first start
+    entrypoint: >
+      sh -c "
+        ollama serve &
+        sleep 5
+        ollama pull snowflake-arctic-embed2
+        wait
+      "
+
+volumes:
+  qdrant-storage:
+    driver: local
+  redis-data:
+    driver: local
+  ollama-models:
+    driver: local
+
+networks:
+  default:
+    name: memory-system
+    driver: bridge

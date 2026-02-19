@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Complete architecture diagrams for the Jarvis-like memory system - three-layer persistent memory for OpenClaw">
+    <meta name="keywords" content="OpenClaw, memory architecture, Qdrant, Redis, vector database, AI memory">
+    <meta name="author" content="Rob - SpeedyFoxAI">
+    <title>Memory Architecture Diagrams | SpeedyFoxAI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #06b6d4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .dark .glass {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Architecture Diagram Styles */
+        .arch-layer {
+            position: relative;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            transition: all 0.3s ease;
+        }
+        
+        .arch-layer:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .layer-0 { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b; }
+        .layer-1 { background: linear-gradient(135deg, #dbeafe 0%, #93c5fd 100%); border: 2px solid #3b82f6; }
+        .layer-2 { background: linear-gradient(135deg, #d1fae5 0%, #6ee7b7 100%); border: 2px solid #10b981; }
+        .layer-3 { background: linear-gradient(135deg, #ede9fe 0%, #a78bfa 100%); border: 2px solid #8b5cf6; }
+        
+        .dark .layer-0 { background: linear-gradient(135deg, #451a03 0%, #78350f 100%); border-color: #f59e0b; }
+        .dark .layer-1 { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); border-color: #3b82f6; }
+        .dark .layer-2 { background: linear-gradient(135deg, #064e3b 0%, #065f46 100%); border-color: #10b981; }
+        .dark .layer-3 { background: linear-gradient(135deg, #4c1d95 0%, #5b21b6 100%); border-color: #8b5cf6; }
+        
+        .flow-arrow {
+            text-align: center;
+            font-size: 2rem;
+            color: #6366f1;
+            margin: 0.5rem 0;
+        }
+        
+        .component-box {
+            background: rgba(255,255,255,0.7);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            margin: 0.5rem 0;
+            border-left: 4px solid;
+        }
+        
+        .dark .component-box {
+            background: rgba(0,0,0,0.3);
+        }
+        
+        .cmd-badge {
+            display: inline-block;
+            background: #1f2937;
+            color: #10b981;
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            margin: 0.25rem;
+        }
+        
+        .dark .cmd-badge {
+            background: #111827;
+            color: #34d399;
+        }
+        
+        .status-ok { color: #10b981; }
+        .status-warn { color: #f59e0b; }
+        .status-error { color: #ef4444; }
+        
+        .dark .status-ok { color: #34d399; }
+        .dark .status-warn { color: #fbbf24; }
+        .dark .status-error { color: #f87171; }
+        
+        .infra-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .infra-card {
+            background: rgba(255,255,255,0.5);
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+        }
+        
+        .dark .infra-card {
+            background: rgba(0,0,0,0.3);
+            border-color: #374151;
+        }
+        
+        .code-block {
+            background: #1f2937;
+            color: #e5e7eb;
+            border-radius: 8px;
+            padding: 1rem;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+        }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .tab-btn {
+            padding: 0.5rem 1rem;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .tab-btn.active {
+            border-bottom-color: #6366f1;
+            color: #6366f1;
+        }
+        
+        .dark .tab-btn.active {
+            color: #818cf8;
+            border-bottom-color: #818cf8;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 glass">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex-shrink-0 flex items-center">
+                    <a href="/index.html" class="text-2xl font-bold gradient-text">SpeedyFoxAI</a>
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a href="/index.html" class="hover:text-primary transition-colors">Home</a>
+                    <a href="/index.html#tutorials" class="text-primary font-medium">Tutorials</a>
+                    <a href="/downloads.html" class="hover:text-primary transition-colors">Downloads</a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="theme-toggle" class="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                        <i class="fas fa-sun hidden dark:block"></i>
+                        <i class="fas fa-moon block dark:hidden"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="pt-32 pb-16 bg-gradient-to-br from-indigo-50 via-purple-50 to-cyan-50 dark:from-gray-900 dark:via-indigo-950 dark:to-purple-950">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm mb-6">
+                <i class="fas fa-project-diagram text-primary"></i>
+                <span class="text-sm font-medium">Architecture Reference</span>
+            </div>
+            <h1 class="text-4xl md:text-6xl font-bold mb-6">
+                <span class="gradient-text">Memory Architecture</span><br>
+                Complete Diagrams
+            </h1>
+            <p class="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+                Visual reference for the three-layer Jarvis-like memory system. Redis buffer, Markdown logs, and Qdrant vector database working together.
+            </p>
+        </div>
+    </section>
+
+    <!-- Architecture Overview -->
+    <section class="py-16 bg-white dark:bg-gray-800">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold mb-8 text-center">System Architecture Overview</h2>
+            
+            <!-- Layer 0 -->
+            <div class="arch-layer layer-0 dark:text-white">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 rounded-full bg-yellow-500 flex items-center justify-center text-white font-bold">0</div>
+                    <h3 class="text-xl font-bold">Session Context (OpenClaw Gateway)</h3>
+                    <span class="ml-auto text-sm opacity-70">Temporary Only</span>
+                </div>
+                <div class="component-box border-yellow-500">
+                    <p class="font-medium">Session JSONL → Live Context</p>
+                    <p class="text-sm opacity-70 mt-1">Lost on /reset or session expiration • ~8k-32k tokens</p>
+                </div>
+            </div>
+            
+            <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
+            
+            <!-- Layer 1 -->
+            <div class="arch-layer layer-1 dark:text-white">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">1</div>
+                    <h3 class="text-xl font-bold">Redis Buffer (Fast Short-Term)</h3>
+                    <span class="ml-auto text-sm opacity-70">Real-Time</span>
+                </div>
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div class="component-box border-blue-500">
+                        <p class="font-medium"><i class="fas fa-database mr-2"></i>Key: mem:rob</p>
+                        <p class="text-sm opacity-70 mt-1">List data structure • LPUSH append</p>
+                    </div>
+                    <div class="component-box border-blue-500">
+                        <p class="font-medium"><i class="fas fa-clock mr-2"></i>Flush: Daily 3:00 AM</p>
+                        <p class="text-sm opacity-70 mt-1">cron_backup.py → Qdrant</p>
+                    </div>
+                </div>
+                <div class="mt-4 flex flex-wrap gap-2">
+                    <span class="cmd-badge">hb_append.py</span>
+                    <span class="cmd-badge">save_mem.py</span>
+                    <span class="cmd-badge">mem:rob</span>
+                </div>
+            </div>
+            
+            <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
+            
+            <!-- Layer 2 -->
+            <div class="arch-layer layer-2 dark:text-white">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white font-bold">2</div>
+                    <h3 class="text-xl font-bold">Daily File Logs (.md)</h3>
+                    <span class="ml-auto text-sm opacity-70">Persistent</span>
+                </div>
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div class="component-box border-green-500">
+                        <p class="font-medium"><i class="fas fa-file-alt mr-2"></i>Location: memory/YYYY-MM-DD.md</p>
+                        <p class="text-sm opacity-70 mt-1">Human-readable Markdown</p>
+                    </div>
+                    <div class="component-box border-green-500">
+                        <p class="font-medium"><i class="fas fa-code-branch mr-2"></i>Git-tracked</p>
+                        <p class="text-sm opacity-70 mt-1">Never lost • Always accessible</p>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <span class="cmd-badge">sliding_backup.sh</span>
+                    <span class="cmd-badge">3:30 AM daily</span>
+                </div>
+            </div>
+            
+            <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
+            
+            <!-- Layer 3 -->
+            <div class="arch-layer layer-3 dark:text-white">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold">3</div>
+                    <h3 class="text-xl font-bold">Qdrant Vector DB (Semantic Long-Term)</h3>
+                    <span class="ml-auto text-sm opacity-70">Searchable</span>
+                </div>
+                <div class="grid md:grid-cols-3 gap-4 mb-4">
+                    <div class="component-box border-purple-500">
+                        <p class="font-medium"><i class="fas fa-cube mr-2"></i>Embeddings</p>
+                        <p class="text-sm opacity-70 mt-1">snowflake-arctic-embed2<br>1024 dimensions</p>
+                    </div>
+                    <div class="component-box border-purple-500">
+                        <p class="font-medium"><i class="fas fa-layer-group mr-2"></i>Collections</p>
+                        <p class="text-sm opacity-70 mt-1">kimi_memories<br>kimi_kb<br>private_court_docs</p>
+                    </div>
+                    <div class="component-box border-purple-500">
+                        <p class="font-medium"><i class="fas fa-user mr-2"></i>User-Centric</p>
+                        <p class="text-sm opacity-70 mt-1">user_id: "rob"<br>Cross-session search</p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <span class="cmd-badge">auto_store.py</span>
+                    <span class="cmd-badge">search_memories.py</span>
+                    <span class="cmd-badge">q <topic></span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Data Flow -->
+    <section class="py-16 bg-gray-50 dark:bg-gray-900">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold mb-8 text-center">Data Flow & Automation</h2>
+            
+            <div class="grid lg:grid-cols-3 gap-8">
+                <!-- Real-Time -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                            <i class="fas fa-bolt text-2xl text-blue-600 dark:text-blue-400"></i>
+                        </div>
+                        <h3 class="text-xl font-bold">Real-Time</h3>
+                    </div>
+                    <div class="code-block">
+User Input → AI Response
+     ↓
+Redis Buffer (fast)
+     ↓
+File Log (persistent)
+     ↓
+[Optional: save q] → Qdrant
+                    </div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-4">Every message triggers automatic append to Redis and file log.</p>
+                </div>
+                
+                <!-- Heartbeat -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                            <i class="fas fa-heartbeat text-2xl text-green-600 dark:text-green-400"></i>
+                        </div>
+                        <h3 class="text-xl font-bold">Heartbeat</h3>
+                    </div>
+                    <div class="code-block">
+Every 30-60 min:
+  hb_append.py → New turns
+  hb_check_email.py → Gmail
+  heartbeat_worker.py → Tasks
+                    </div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-4">Periodic checks accumulate new turns since last save.</p>
+                </div>
+                
+                <!-- Daily -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                            <i class="fas fa-moon text-2xl text-purple-600 dark:text-purple-400"></i>
+                        </div>
+                        <h3 class="text-xl font-bold">Daily Backup</h3>
+                    </div>
+                    <div class="code-block">
+3:00 AM: Redis → Qdrant
+         Clear Redis
+
+3:30 AM: Files → Backup
+         → Qdrant embeddings
+                    </div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-4">Nightly cron jobs flush buffers to permanent storage.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Infrastructure -->
+    <section class="py-16 bg-white dark:bg-gray-800">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold mb-8 text-center">Infrastructure Topology</h2>
+            
+            <div class="bg-gray-100 dark:bg-gray-900 rounded-2xl p-8">
+                <div class="text-center mb-6">
+                    <span class="px-4 py-2 rounded-full bg-gray-200 dark:bg-gray-700 font-medium">Proxmox Cluster</span>
+                </div>
+                
+                <div class="infra-grid">
+                    <div class="infra-card">
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                            <i class="fas fa-server text-2xl text-blue-600 dark:text-blue-400"></i>
+                        </div>
+                        <h4 class="font-bold mb-1">Ollama</h4>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">10.0.0.10:11434</p>
+                        <p class="text-xs text-gray-500">Embeddings</p>
+                    </div>
+                    
+                    <div class="infra-card">
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                            <i class="fas fa-database text-2xl text-purple-600 dark:text-purple-400"></i>
+                        </div>
+                        <h4 class="font-bold mb-1">Qdrant</h4>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">10.0.0.40:6333</p>
+                        <p class="text-xs text-gray-500">Vector DB</p>
+                    </div>
+                    
+                    <div class="infra-card">
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                            <i class="fas fa-memory text-2xl text-green-600 dark:text-green-400"></i>
+                        </div>
+                        <h4 class="font-bold mb-1">Redis</h4>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">10.0.0.36:6379</p>
+                        <p class="text-xs text-gray-500">Task Queue</p>
+                    </div>
+                    
+                    <div class="infra-card">
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center">
+                            <i class="fas fa-search text-2xl text-cyan-600 dark:text-cyan-400"></i>
+                        </div>
+                        <h4 class="font-bold mb-1">SearXNG</h4>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">10.0.0.8:8888</p>
+                        <p class="text-xs text-gray-500">Search</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Commands Reference -->
+    <section class="py-16 bg-gray-50 dark:bg-gray-900">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold mb-8 text-center">Command Reference</h2>
+            
+            <div class="grid lg:grid-cols-2 gap-8">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
+                    <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+                        <i class="fas fa-terminal text-primary"></i>
+                        User Commands
+                    </h3>
+                    <table class="w-full text-sm">
+                        <thead class="border-b dark:border-gray-700">
+                            <tr>
+                                <th class="text-left py-2">Command</th>
+                                <th class="text-left py-2">Action</th>
+                                <th class="text-left py-2">Layer</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b dark:border-gray-700">
+                                <td class="py-3 font-mono text-green-600 dark:text-green-400">save mem</td>
+                                <td>Save all context</td>
+                                <td><span class="text-blue-600 dark:text-blue-400">Redis + File</span></td>
+                            </tr>
+                            <tr class="border-b dark:border-gray-700">
+                                <td class="py-3 font-mono text-purple-600 dark:text-purple-400">save q</td>
+                                <td>Store to Qdrant</td>
+                                <td><span class="text-purple-600 dark:text-purple-400">Vector DB</span></td>
+                            </tr>
+                            <tr class="border-b dark:border-gray-700">
+                                <td class="py-3 font-mono text-indigo-600 dark:text-indigo-400">q topic</td>
+                                <td>Semantic search</td>
+                                <td><span class="text-purple-600 dark:text-purple-400">Vector DB</span></td>
+                            </tr>
+                            <tr>
+                                <td class="py-3 font-mono text-yellow-600 dark:text-yellow-400">remember</td>
+                                <td>Quick note</td>
+                                <td><span class="text-green-600 dark:text-green-400">File</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
+                    <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+                        <i class="fas fa-clock text-primary"></i>
+                        Automation
+                    </h3>
+                    <table class="w-full text-sm">
+                        <thead class="border-b dark:border-gray-700">
+                            <tr>
+                                <th class="text-left py-2">Schedule</th>
+                                <th class="text-left py-2">Script</th>
+                                <th class="text-left py-2">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b dark:border-gray-700">
+                                <td class="py-3">Heartbeat</td>
+                                <td class="font-mono">hb_append.py</td>
+                                <td>New turns → Redis</td>
+                            </tr>
+                            <tr class="border-b dark:border-gray-700">
+                                <td class="py-3">3:00 AM</td>
+                                <td class="font-mono">cron_backup.py</td>
+                                <td>Redis → Qdrant</td>
+                            </tr>
+                            <tr>
+                                <td class="py-3">3:30 AM</td>
+                                <td class="font-mono">sliding_backup.sh</td>
+                                <td>File → Backup</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Download -->
+    <section class="py-16 bg-gradient-to-r from-primary to-secondary relative overflow-hidden">
+        <div class="absolute inset-0 bg-black/10"></div>
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+            <h2 class="text-3xl font-bold text-white mb-6">Get the Complete Blueprint</h2>
+            <p class="text-white/90 text-lg mb-8 max-w-2xl mx-auto">
+                Download the full Jarvis Memory blueprint with all scripts, documentation, and installation guide.
+            </p>
+            <a href="/downloads.html" class="inline-flex items-center gap-2 bg-white text-primary px-8 py-4 rounded-full font-semibold text-lg hover:bg-gray-100 transition-colors">
+                <i class="fas fa-download"></i>
+                Go to Downloads
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-400 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+                <div class="text-2xl font-bold text-white">SpeedyFoxAI</div>
+                <div class="text-sm">
+                    © 2026 SpeedyFoxAI. All rights reserved.
+                </div>
+                <div class="flex gap-4">
+                    <a href="/index.html" class="hover:text-white transition-colors">Home</a>
+                    <a href="/downloads.html" class="hover:text-white transition-colors">Downloads</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Theme Toggle -->
+    <script>
+        const themeToggle = document.getElementById('theme-toggle');
+        const html = document.documentElement;
+        
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            html.classList.add('dark');
+        } else {
+            html.classList.remove('dark');
+        }
+        
+        themeToggle.addEventListener('click', () => {
+            html.classList.toggle('dark');
+            localStorage.theme = html.classList.contains('dark') ? 'dark' : 'light';
+        });
+    </script>
+</body>
+</html>
