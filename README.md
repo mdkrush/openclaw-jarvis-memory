@@ -16,6 +16,11 @@
 
 This is a complete blueprint for implementing a production-grade, multi-layer memory system for OpenClaw that provides persistent, searchable, cross-session context — just like Jarvis from Iron Man.
 
+**Why not just use OpenClaw's built-in features or skills?**  
+> *I want a portable brain — one I can take to the next OpenClaw, or whatever AI project I adopt next.*
+>
+> This system is **modular and independent**. Your memories live in standard infrastructure (Redis, Qdrant, Markdown files) that any AI can access. You're not locked into a single platform.
+
 [![YouTube Tutorial](https://img.shields.io/badge/YouTube-Tutorial-red)](https://youtube.com)
 [![License](https://img.shields.io/badge/License-MIT-blue)]()
 
