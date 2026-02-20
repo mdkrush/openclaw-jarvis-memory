@@ -87,10 +87,9 @@ When you run `./install.sh`, the following files in your OpenClaw workspace are 
 
 | File | Location | Purpose |
 |------|----------|---------|
-| **52 Python scripts** | `~/.openclaw/workspace/skills/mem-redis/scripts/` (5 files)<br>`~/.openclaw/workspace/skills/qdrant-memory/scripts/` (43 files)<br>`~/.openclaw/workspace/skills/task-queue/scripts/` (3 files) | Core memory system functionality |
+| **49 Python scripts** | `~/.openclaw/workspace/skills/mem-redis/scripts/` (5 files)<br>`~/.openclaw/workspace/skills/qdrant-memory/scripts/` (44 files) | Core memory system functionality |
 | **SKILL.md** | `~/.openclaw/workspace/skills/mem-redis/SKILL.md` | Redis skill documentation |
 | **SKILL.md** | `~/.openclaw/workspace/skills/qdrant-memory/SKILL.md` | Qdrant skill documentation |
-| **SKILL.md** | `~/.openclaw/workspace/skills/task-queue/SKILL.md` | Task queue documentation |
 | **memory/** | `~/.openclaw/workspace/memory/` | Daily markdown log files directory |
 | **.gitkeep** | `~/.openclaw/workspace/memory/.gitkeep` | Keeps memory dir in git |
 | **Backup Manifest** | `~/.openclaw/workspace/.backups/install_*_MANIFEST.txt` | Lists all backups with restore commands |
@@ -121,7 +120,6 @@ If you need to restore manually without using the uninstaller, here's every sing
 ~/.openclaw/workspace/skills/qdrant-memory/scripts/q_save.py
 ~/.openclaw/workspace/skills/qdrant-memory/scripts/search_memories.py
 ~/.openclaw/workspace/skills/qdrant-memory/scripts/init_kimi_memories.py
-~/.openclaw/workspace/skills/qdrant-memory/scripts/init_kimi_kb.py
 ~/.openclaw/workspace/skills/qdrant-memory/scripts/daily_conversation_backup.py
 ~/.openclaw/workspace/skills/qdrant-memory/scripts/harvest_sessions.py
 ~/.openclaw/workspace/skills/qdrant-memory/scripts/sliding_backup.sh
@@ -130,18 +128,12 @@ If you need to restore manually without using the uninstaller, here's every sing
 ~/.openclaw/workspace/skills/qdrant-memory/HARVEST.md
 # ... (33 more scripts - see skills/qdrant-memory/scripts/)
 
-# Task Queue (3 scripts)
-~/.openclaw/workspace/skills/task-queue/scripts/add_task.py
-~/.openclaw/workspace/skills/task-queue/scripts/heartbeat_worker.py
-~/.openclaw/workspace/skills/task-queue/scripts/list_tasks.py
-~/.openclaw/workspace/skills/task-queue/SKILL.md
 ```
 
 **Directories Created:**
 ```
 ~/.openclaw/workspace/skills/mem-redis/scripts/
 ~/.openclaw/workspace/skills/qdrant-memory/scripts/
-~/.openclaw/workspace/skills/task-queue/scripts/
 ~/.openclaw/workspace/memory/
 ~/.openclaw/workspace/.backups/
 ```
@@ -328,7 +320,6 @@ export OLLAMA_URL="http://127.0.0.1:11434"
 ```bash
 cd ~/.openclaw/workspace/skills/qdrant-memory/scripts
 python3 init_kimi_memories.py
-python3 init_kimi_kb.py
 ```
 
 ### Step 5: Set Up Cron
